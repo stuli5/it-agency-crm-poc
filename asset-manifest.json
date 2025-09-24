@@ -1,0 +1,13 @@
+{
+  "files": {
+    "main.css": "/it-agency-crm-poc/static/css/main.a92aca5f.css",
+    "main.js": "/it-agency-crm-poc/static/js/main.1543cce7.js",
+    "index.html": "/it-agency-crm-poc/index.html",
+    "main.a92aca5f.css.map": "/it-agency-crm-poc/static/css/main.a92aca5f.css.map",
+    "main.1543cce7.js.map": "/it-agency-crm-poc/static/js/main.1543cce7.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.a92aca5f.css",
+    "static/js/main.1543cce7.js"
+  ]
+}
