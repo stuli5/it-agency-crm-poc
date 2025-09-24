@@ -62,7 +62,8 @@ const CRM = () => {
     setClients(clients.filter(client => client.id !== clientId));
     // Môžeme pridať toast notifikáciu
     alert('Klient bol úspešne vymazaný!');
-  };
+   }
+};
   const Dashboard = () => {
     const totalProjects = projects.length;
     const activeProjects = projects.filter(p => p.status === 'V realizácii').length;
