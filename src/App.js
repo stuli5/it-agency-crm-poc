@@ -57,7 +57,12 @@ const CRM = () => {
     person.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     person.skills.some(skill => skill.toLowerCase().includes(searchTerm.toLowerCase()))
   );
-
+  const deleteClient = (clientId) => {
+  if (window.confirm('Naozaj chcete vymazať tohto klienta? Táto akcia sa nedá vrátiť späť.')) {
+    setClients(clients.filter(client => client.id !== clientId));
+    // Môžeme pridať toast notifikáciu
+    alert('Klient bol úspešne vymazaný!');
+  };
   const Dashboard = () => {
     const totalProjects = projects.length;
     const activeProjects = projects.filter(p => p.status === 'V realizácii').length;
@@ -213,8 +218,10 @@ const CRM = () => {
                     {client.projects}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <button className="text-blue-600 hover:text-blue-900 mr-4">Upraviť</button>
-                    <button className="text-red-600 hover:text-red-900">Vymazať</button>
+                    <button className="text-blue-600 hover:text-blue-900 mr-4"
+                    onClick={() => alert('Úprava klienta - zatiaľ nie je implementovaná')}>Upraviť</button>
+                    <button className="text-red-600 hover:text-red-900"
+                    onClick={() => deleteClient(client.id)}>Vymazať</button>
                   </td>
                 </tr>
               ))}
