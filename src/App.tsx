@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Calendar, Users, Briefcase, User, LayoutDashboard } from 'lucide-react';
 import { ClientsTab } from './components/Clients/ClientsTab';
+import { ProjectsTab } from './components/Projects/ProjectsTab';
 
 // Zatiaľ ponecháme starý kód pre ostatné moduly
 const Dashboard = () => {
@@ -8,15 +9,6 @@ const Dashboard = () => {
     <div className="bg-white rounded-lg shadow p-6">
       <h2 className="text-2xl font-bold mb-4">Dashboard</h2>
       <p className="text-gray-600">Dashboard content coming soon...</p>
-    </div>
-  );
-};
-
-const ProjectsTab = () => {
-  return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <h2 className="text-2xl font-bold mb-4">Projekty</h2>
-      <p className="text-gray-600">Projects content coming soon...</p>
     </div>
   );
 };
