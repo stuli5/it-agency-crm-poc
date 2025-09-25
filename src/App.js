@@ -4,6 +4,7 @@ import { Plus, Search, Users, Briefcase, User, Calendar, DollarSign, Clock, Chec
 const CRM = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedMonth, setSelectedMonth] = useState('2025-01');
 
   // Sample data
   const [clients, setClients] = useState([
@@ -27,6 +28,45 @@ const CRM = () => {
     { id: 5, name: 'Dominik Slávik', skills: ['Next.js', 'GraphQL', 'AWS'], availability: 'Voľný', currentProject: null, rate: '€52/hod' }
   ]);
 
+  const [bodyshopRecords, setBodyshopRecords] = useState([
+    { 
+      id: 1, 
+      specialist: 'Jana Nováková', 
+      client: 'TechCorp s.r.o.', 
+      project: 'Webová aplikácia pre HR', 
+      month: '2025-01',
+      buyRate: 9000, 
+      sellRate: 11000, 
+      margin: 2000,
+      workedDays: 20,
+      monthlyProfit: 40000  // 2000 × 20
+    },
+    { 
+      id: 2, 
+      specialist: 'Tomáš Veselý', 
+      client: 'StartupXY', 
+      project: 'Mobile app pre delivery', 
+      month: '2025-01',
+      buyRate: 8500, 
+      sellRate: 10800, 
+      margin: 2300,
+      workedDays: 22,
+      monthlyProfit: 50600  // 2300 × 22
+    },
+    { 
+      id: 3, 
+      specialist: 'Michal Horák', 
+      client: 'E-shop Plus', 
+      project: 'API integrácia', 
+      month: '2025-01',
+      buyRate: 10000, 
+      sellRate: 12500, 
+      margin: 2500,
+      workedDays: 18,
+      monthlyProfit: 45000  // 2500 × 18
+    }
+  ]);
+
   const getStatusColor = (status) => {
     switch(status) {
       case 'Lead': return 'bg-blue-100 text-blue-800';
@@ -43,6 +83,20 @@ const CRM = () => {
       : 'bg-red-100 text-red-800';
   };
 
+  const deleteClient = (clientId) => {
+    if (window.confirm('Naozaj chcete vymazať tohto klienta? Táto akcia sa nedá vrátiť späť.')) {
+      setClients(clients.filter(client => client.id !== clientId));
+      alert('Klient bol úspešne vymazaný!');
+    }
+  };
+
+  const deleteBodyshopRecord = (recordId) => {
+    if (window.confirm('Naozaj chcete vymazať tento záznam? Táto akcia sa nedá vrátiť späť.')) {
+      setBodyshopRecords(bodyshopRecords.filter(record => record.id !== recordId));
+      alert('Záznam bol úspešne vymazaný!');
+    }
+  };
+
   const filteredClients = clients.filter(client => 
     client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     client.contact.toLowerCase().includes(searchTerm.toLowerCase())
@@ -57,13 +111,7 @@ const CRM = () => {
     person.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     person.skills.some(skill => skill.toLowerCase().includes(searchTerm.toLowerCase()))
   );
-  const deleteClient = (clientId) => {
-  if (window.confirm('Naozaj chcete vymazať tohto klienta? Táto akcia sa nedá vrátiť späť.')) {
-    setClients(clients.filter(client => client.id !== clientId));
-    // Môžeme pridať toast notifikáciu
-    alert('Klient bol úspešne vymazaný!');
-   }
-   };
+
   const Dashboard = () => {
     const totalProjects = projects.length;
     const activeProjects = projects.filter(p => p.status === 'V realizácii').length;
@@ -219,10 +267,18 @@ const CRM = () => {
                     {client.projects}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <button className="text-blue-600 hover:text-blue-900 mr-4"
-                    onClick={() => alert('Úprava klienta - zatiaľ nie je implementovaná')}>Upraviť</button>
-                    <button className="text-red-600 hover:text-red-900"
-                    onClick={() => deleteClient(client.id)}>Vymazať</button>
+                    <button 
+                      className="text-blue-600 hover:text-blue-900 mr-4"
+                      onClick={() => alert('Úprava klienta - zatiaľ nie je implementovaná')}
+                    >
+                      Upraviť
+                    </button>
+                    <button 
+                      className="text-red-600 hover:text-red-900"
+                      onClick={() => deleteClient(client.id)}
+                    >
+                      Vymazať
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -378,11 +434,199 @@ const CRM = () => {
     </div>
   );
 
+  const BodyshopTab = () => {
+    // Filtruj záznamy podľa vybraného mesiaca
+    const filteredByMonth = bodyshopRecords.filter(record => record.month === selectedMonth);
+    
+    const totalMonthlyProfit = filteredByMonth.reduce((sum, record) => sum + record.monthlyProfit, 0);
+    const totalMargin = filteredByMonth.reduce((sum, record) => sum + (record.margin * record.workedDays), 0);
+    const activeSpecialists = filteredByMonth.length;
+
+    // Generuj možnosti mesiacov pre select
+    const generateMonthOptions = () => {
+      const months = [];
+      const currentYear = 2025;
+      for (let i = 1; i <= 12; i++) {
+        const month = i.toString().padStart(2, '0');
+        const monthNames = ['Január', 'Február', 'Marec', 'Apríl', 'Máj', 'Jún', 
+                           'Júl', 'August', 'September', 'Október', 'November', 'December'];
+        months.push({
+          value: `${currentYear}-${month}`,
+          label: `${monthNames[i-1]} ${currentYear}`
+        });
+      }
+      return months;
+    };
+
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <h2 className="text-2xl font-bold text-gray-900">Bodyshop</h2>
+          <button className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+            <Plus className="h-4 w-4 mr-2" />
+            Nový záznam
+          </button>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="bg-white p-6 rounded-lg shadow border">
+            <div className="flex items-center">
+              <DollarSign className="h-8 w-8 text-green-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Mesačný zisk</p>
+                <p className="text-2xl font-bold text-gray-900">{totalMonthlyProfit.toLocaleString()} Kč</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white p-6 rounded-lg shadow border">
+            <div className="flex items-center">
+              <DollarSign className="h-8 w-8 text-blue-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Celková marža</p>
+                <p className="text-2xl font-bold text-gray-900">{totalMargin.toLocaleString()} Kč</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white p-6 rounded-lg shadow border">
+            <div className="flex items-center">
+              <Users className="h-8 w-8 text-purple-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Aktívni špecialistov</p>
+                <p className="text-2xl font-bold text-gray-900">{activeSpecialists}</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white p-6 rounded-lg shadow border">
+            <div className="flex items-center">
+              <Calendar className="h-8 w-8 text-yellow-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Vybraný mesiac</p>
+                <select 
+                  value={selectedMonth}
+                  onChange={(e) => setSelectedMonth(e.target.value)}
+                  className="text-lg font-bold text-gray-900 bg-transparent border-none focus:outline-none cursor-pointer"
+                >
+                  {generateMonthOptions().map(option => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div className="bg-white shadow rounded-lg">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <div className="flex justify-between items-center">
+              <div className="relative flex-1 mr-4">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Hľadať špecialistu, klienta alebo projekt..."
+                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-md w-full"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+              <div className="text-sm text-gray-500">
+                Zobrazujú sa záznamy pre {generateMonthOptions().find(m => m.value === selectedMonth)?.label}
+              </div>
+            </div>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Špecialista</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Klient / Projekt</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mesiac</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nákupný rate</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Predajný rate</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Marža</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Odprac. dni</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mesačný zisk</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Akcie</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filteredByMonth.filter(record => 
+                  record.specialist.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                  record.client.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                  record.project.toLowerCase().includes(searchTerm.toLowerCase())
+                ).map(record => (
+                  <tr key={record.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <User className="h-8 w-8 text-gray-400 mr-3" />
+                        <div className="text-sm font-medium text-gray-900">{record.specialist}</div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">{record.client}</div>
+                      <div className="text-sm text-gray-500">{record.project}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {record.month}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {record.buyRate.toLocaleString()} Kč
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {record.sellRate.toLocaleString()} Kč
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                        {record.margin.toLocaleString()} Kč
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {record.workedDays}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {record.monthlyProfit.toLocaleString()} Kč
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <button 
+                        className="text-blue-600 hover:text-blue-900 mr-4"
+                        onClick={() => alert('Úprava záznamu - zatiaľ nie je implementovaná')}
+                      >
+                        Upraviť
+                      </button>
+                      <button 
+                        className="text-red-600 hover:text-red-900"
+                        onClick={() => deleteBodyshopRecord(record.id)}
+                      >
+                        Vymazať
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          
+          {filteredByMonth.length === 0 && (
+            <div className="p-6 text-center text-gray-500">
+              <p>Žiadne záznamy pre vybraný mesiac</p>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   const tabs = [
     { id: 'dashboard', name: 'Dashboard', icon: Calendar },
     { id: 'clients', name: 'Klienti', icon: Users },
     { id: 'projects', name: 'Projekty', icon: Briefcase },
-    { id: 'people', name: 'IT Kapacity', icon: User }
+    { id: 'people', name: 'IT Kapacity', icon: User },
+    { id: 'bodyshop', name: 'Bodyshop', icon: User }
   ];
 
   return (
@@ -432,6 +676,7 @@ const CRM = () => {
           {activeTab === 'clients' && <ClientsTab />}
           {activeTab === 'projects' && <ProjectsTab />}
           {activeTab === 'people' && <PeopleTab />}
+          {activeTab === 'bodyshop' && <BodyshopTab />}
         </div>
       </main>
     </div>
