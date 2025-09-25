@@ -32,7 +32,7 @@ export const AVAILABLE_TECHNOLOGIES = [
   'Kubernetes', 'GraphQL', 'REST API', 'Git', 'CI/CD', 'Tailwind CSS'
 ];
 
-// Zoznam klientov (v reálnej app by sa načítavali z API)
+// Zoznam klientov (v reálnej app by sa načítavali z API) --
 export const AVAILABLE_CLIENTS = [
   'TechCorp s.r.o.',
   'FitLife SK',
