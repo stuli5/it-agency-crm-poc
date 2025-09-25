@@ -1,13 +1,13 @@
 {
   "files": {
-    "main.css": "/it-agency-crm-poc/static/css/main.7a592a29.css",
-    "main.js": "/it-agency-crm-poc/static/js/main.056cc16e.js",
+    "main.css": "/it-agency-crm-poc/static/css/main.3fb88ad0.css",
+    "main.js": "/it-agency-crm-poc/static/js/main.98232a7e.js",
     "index.html": "/it-agency-crm-poc/index.html",
-    "main.7a592a29.css.map": "/it-agency-crm-poc/static/css/main.7a592a29.css.map",
-    "main.056cc16e.js.map": "/it-agency-crm-poc/static/js/main.056cc16e.js.map"
+    "main.3fb88ad0.css.map": "/it-agency-crm-poc/static/css/main.3fb88ad0.css.map",
+    "main.98232a7e.js.map": "/it-agency-crm-poc/static/js/main.98232a7e.js.map"
   },
   "entrypoints": [
-    "static/css/main.7a592a29.css",
-    "static/js/main.056cc16e.js"
+    "static/css/main.3fb88ad0.css",
+    "static/js/main.98232a7e.js"
   ]
 }
