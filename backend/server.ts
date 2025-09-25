@@ -13,7 +13,7 @@ const { Pool } = pg;
 const pool = new Pool({
   host: 'localhost',
   port: 5432,
-  database: 'IT agency CRM', // Váš názov databázy
+  database: 'it_agency_crm', // Váš názov databázy
   user: 'jaro',      // Váš PostgreSQL user
   password: 'jJ255151001jJ',  // Vaše PostgreSQL heslo - ZMEŇTE!
 });
