@@ -4,30 +4,22 @@ import {
   Search, 
   Edit2, 
   Trash2, 
-  Calendar,
   Users,
-  DollarSign,
   Clock,
   CheckCircle,
   AlertCircle,
   XCircle
 } from 'lucide-react';
-
-// Typy
-interface Project {
-  id: number;
-  name: string;
-  client: string;
-  status: 'planning' | 'active' | 'on-hold' | 'completed' | 'cancelled';
-  startDate: string;
-  endDate: string;
-  budget: number;
-  spent: number;
-  progress: number;
-  teamSize: number;
-  description: string;
-  technologies: string[];
-}
+import { ProjectFormModal } from './ProjectFormModal';
+import { Project, PROJECT_STATUSES, AVAILABLE_CLIENTS, AVAILABLE_TECHNOLOGIES } from './types';
+import { 
+  formatCurrency, 
+  formatDate, 
+  calculateDaysLeft, 
+  getDaysLeftText,
+  getProgressColor,
+  getBudgetStatusColor 
+} from './utils';
 
 // Mock data
 const mockProjects: Project[] = [
@@ -107,7 +99,7 @@ export const ProjectsTab: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>(mockProjects);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
-  const [showAddForm, setShowAddForm] = useState(false);
+  const [showModal, setShowModal] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
 
   // Filtrovanie projektov
@@ -124,7 +116,47 @@ export const ProjectsTab: React.FC = () => {
     return matchesSearch && matchesStatus;
   });
 
-  // Pomocné funkcie
+  // Handlers
+  const handleAddProject = () => {
+    setEditingProject(null);
+    setShowModal(true);
+  };
+
+  const handleEditProject = (project: Project) => {
+    setEditingProject(project);
+    setShowModal(true);
+  };
+
+  const handleDeleteProject = (id: number) => {
+    if (window.confirm('Naozaj chcete zmazať tento projekt?')) {
+      setProjects(projects.filter(p => p.id !== id));
+    }
+  };
+
+  const handleSaveProject = (projectData: Partial<Project>) => {
+    if (editingProject) {
+      // Update existing project
+      setProjects(projects.map(p => 
+        p.id === editingProject.id 
+          ? { ...projectData, id: editingProject.id } as Project
+          : p
+      ));
+    } else {
+      // Add new project
+      const newProject: Project = {
+        ...projectData,
+        id: Math.max(...projects.map(p => p.id), 0) + 1
+      } as Project;
+      setProjects([...projects, newProject]);
+    }
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setEditingProject(null);
+  };
+
+  // Pomocné funkcie pre ikony
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'active': return <Clock className="h-4 w-4 text-blue-500" />;
@@ -133,47 +165,6 @@ export const ProjectsTab: React.FC = () => {
       case 'cancelled': return <XCircle className="h-4 w-4 text-red-500" />;
       default: return <AlertCircle className="h-4 w-4 text-gray-500" />;
     }
-  };
-
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case 'planning': return 'Plánovanie';
-      case 'active': return 'Aktívny';
-      case 'on-hold': return 'Pozastavený';
-      case 'completed': return 'Dokončený';
-      case 'cancelled': return 'Zrušený';
-      default: return status;
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'planning': return 'bg-gray-100 text-gray-800';
-      case 'active': return 'bg-blue-100 text-blue-800';
-      case 'on-hold': return 'bg-yellow-100 text-yellow-800';
-      case 'completed': return 'bg-green-100 text-green-800';
-      case 'cancelled': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('sk-SK', {
-      style: 'currency',
-      currency: 'EUR'
-    }).format(amount);
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('sk-SK');
-  };
-
-  const calculateDaysLeft = (endDate: string) => {
-    const end = new Date(endDate);
-    const today = new Date();
-    const diffTime = end.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays;
   };
 
   // Štatistiky
@@ -195,7 +186,7 @@ export const ProjectsTab: React.FC = () => {
             <p className="text-gray-600 mt-1">Správa firemných projektov</p>
           </div>
           <button
-            onClick={() => setShowAddForm(true)}
+            onClick={handleAddProject}
             className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
           >
             <Plus className="h-5 w-5" />
@@ -258,7 +249,7 @@ export const ProjectsTab: React.FC = () => {
         </div>
       </div>
 
-      {/* Zoznam projektov */}
+      {/* Tabuľka projektov */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
@@ -294,6 +285,7 @@ export const ProjectsTab: React.FC = () => {
               {filteredProjects.map((project) => {
                 const daysLeft = calculateDaysLeft(project.endDate);
                 const isOverdue = daysLeft < 0 && project.status === 'active';
+                const statusConfig = PROJECT_STATUSES[project.status];
                 
                 return (
                   <tr key={project.id} className="hover:bg-gray-50">
@@ -322,8 +314,8 @@ export const ProjectsTab: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-2">
                         {getStatusIcon(project.status)}
-                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(project.status)}`}>
-                          {getStatusLabel(project.status)}
+                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${statusConfig.color}`}>
+                          {statusConfig.label}
                         </span>
                       </div>
                     </td>
@@ -334,12 +326,7 @@ export const ProjectsTab: React.FC = () => {
                         </div>
                         <div className="w-full bg-gray-200 rounded-full h-2">
                           <div 
-                            className={`h-2 rounded-full ${
-                              project.progress === 100 ? 'bg-green-500' : 
-                              project.progress >= 70 ? 'bg-blue-500' :
-                              project.progress >= 40 ? 'bg-yellow-500' : 
-                              'bg-red-500'
-                            }`}
+                            className={`h-2 rounded-full ${getProgressColor(project.progress)}`}
                             style={{ width: `${project.progress}%` }}
                           />
                         </div>
@@ -362,11 +349,7 @@ export const ProjectsTab: React.FC = () => {
                         <div className="mt-1">
                           <div className="w-20 bg-gray-200 rounded-full h-1">
                             <div 
-                              className={`h-1 rounded-full ${
-                                (project.spent / project.budget) > 0.9 ? 'bg-red-500' :
-                                (project.spent / project.budget) > 0.7 ? 'bg-yellow-500' :
-                                'bg-green-500'
-                              }`}
+                              className={`h-1 rounded-full ${getBudgetStatusColor(project.spent, project.budget)}`}
                               style={{ width: `${Math.min(100, (project.spent / project.budget) * 100)}%` }}
                             />
                           </div>
@@ -380,7 +363,7 @@ export const ProjectsTab: React.FC = () => {
                         </div>
                         {project.status === 'active' && (
                           <div className={`text-xs ${isOverdue ? 'text-red-600 font-medium' : 'text-gray-500'}`}>
-                            {isOverdue ? `${Math.abs(daysLeft)} dní po termíne` : `${daysLeft} dní zostáva`}
+                            {getDaysLeftText(daysLeft, project.status)}
                           </div>
                         )}
                       </div>
@@ -388,18 +371,16 @@ export const ProjectsTab: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       <div className="flex gap-2">
                         <button
-                          onClick={() => setEditingProject(project)}
-                          className="text-blue-600 hover:text-blue-900"
+                          onClick={() => handleEditProject(project)}
+                          className="text-blue-600 hover:text-blue-900 transition-colors"
+                          title="Upraviť projekt"
                         >
                           <Edit2 className="h-4 w-4" />
                         </button>
                         <button
-                          onClick={() => {
-                            if (window.confirm('Naozaj chcete zmazať tento projekt?')) {
-                              setProjects(projects.filter(p => p.id !== project.id));
-                            }
-                          }}
-                          className="text-red-600 hover:text-red-900"
+                          onClick={() => handleDeleteProject(project.id)}
+                          className="text-red-600 hover:text-red-900 transition-colors"
+                          title="Zmazať projekt"
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
@@ -418,6 +399,16 @@ export const ProjectsTab: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Modal pre pridanie/editáciu */}
+      <ProjectFormModal
+        isOpen={showModal}
+        onClose={handleCloseModal}
+        onSave={handleSaveProject}
+        project={editingProject}
+        availableClients={AVAILABLE_CLIENTS}
+        availableTechnologies={AVAILABLE_TECHNOLOGIES}
+      />
     </div>
   );
 };
