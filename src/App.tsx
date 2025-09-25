@@ -12,8 +12,6 @@ const Dashboard = () => {
   );
 };
 
-export default App;
-
 const ProjectsTab = () => {
   return (
     <div className="bg-white rounded-lg shadow p-6">
@@ -104,3 +102,6 @@ const App: React.FC = () => {
     </div>
   );
 };
+
+// Export musí byť až na konci súboru, po deklarácii App komponenty
+export default App;
