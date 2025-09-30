@@ -473,7 +473,7 @@ export const ProjectsTab: React.FC = () => {
         isOpen={showModal}
         onClose={handleCloseModal}
         onSave={handleSaveProject}
-        project={editingProject}
+        Project={editingProject}
         availableClients={availableClients}
         availableTechnologies={AVAILABLE_TECHNOLOGIES}
       />
