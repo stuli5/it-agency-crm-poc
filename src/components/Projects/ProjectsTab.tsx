@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Plus, 
   Search, 
@@ -11,7 +11,7 @@ import {
   XCircle
 } from 'lucide-react';
 import { ProjectFormModal } from './ProjectFormModal';
-import { Project, PROJECT_STATUSES, AVAILABLE_CLIENTS, AVAILABLE_TECHNOLOGIES } from './types';
+import { PROJECT_STATUSES, AVAILABLE_TECHNOLOGIES } from './types';
 import { 
   formatCurrency, 
   formatDate, 
@@ -20,94 +20,77 @@ import {
   getProgressColor,
   getBudgetStatusColor 
 } from './utils';
+import { api } from '../../services/api';
 
-// Mock data
-const mockProjects: Project[] = [
-  {
-    id: 1,
-    name: 'E-commerce Platform',
-    client: 'TechCorp s.r.o.',
-    status: 'active',
-    startDate: '2024-01-15',
-    endDate: '2024-06-30',
-    budget: 45000,
-    spent: 28000,
-    progress: 65,
-    teamSize: 4,
-    description: 'Vývoj e-commerce platformy s integráciou platobnej brány',
-    technologies: ['React', 'Node.js', 'PostgreSQL', 'Stripe']
-  },
-  {
-    id: 2,
-    name: 'Mobilná aplikácia pre fitness',
-    client: 'FitLife SK',
-    status: 'active',
-    startDate: '2024-02-01',
-    endDate: '2024-07-31',
-    budget: 38000,
-    spent: 15000,
-    progress: 40,
-    teamSize: 3,
-    description: 'iOS a Android aplikácia pre sledovanie tréningov',
-    technologies: ['React Native', 'Firebase', 'TypeScript']
-  },
-  {
-    id: 3,
-    name: 'CRM systém',
-    client: 'GlobalSales a.s.',
-    status: 'planning',
-    startDate: '2024-04-01',
-    endDate: '2024-12-31',
-    budget: 75000,
-    spent: 0,
-    progress: 0,
-    teamSize: 5,
-    description: 'Komplexný CRM systém s AI funkciami',
-    technologies: ['Vue.js', 'Python', 'MongoDB', 'TensorFlow']
-  },
-  {
-    id: 4,
-    name: 'Redesign webovej stránky',
-    client: 'StartupHub',
-    status: 'completed',
-    startDate: '2024-01-01',
-    endDate: '2024-02-28',
-    budget: 12000,
-    spent: 11500,
-    progress: 100,
-    teamSize: 2,
-    description: 'Kompletný redesign firemnej prezentácie',
-    technologies: ['Next.js', 'Tailwind CSS', 'Contentful']
-  },
-  {
-    id: 5,
-    name: 'API integrácia',
-    client: 'DataFlow s.r.o.',
-    status: 'on-hold',
-    startDate: '2024-03-01',
-    endDate: '2024-05-15',
-    budget: 18000,
-    spent: 8000,
-    progress: 45,
-    teamSize: 2,
-    description: 'Integrácia s externými API službami',
-    technologies: ['Node.js', 'Express', 'Redis']
-  }
-];
+// Upravený interface pre databázu
+interface Project {
+  id: number;
+  name: string;
+  client_id: number;
+  client_name?: string;
+  client_company?: string;
+  status: 'planning' | 'active' | 'on-hold' | 'completed' | 'cancelled';
+  start_date: string;
+  end_date: string;
+  budget: number;
+  spent: number;
+  progress: number;
+  team_size: number;
+  description: string;
+  technologies: string[];
+}
+
+interface Client {
+  id: number;
+  name: string;
+  company?: string;
+  email: string;
+}
 
 export const ProjectsTab: React.FC = () => {
-  const [projects, setProjects] = useState<Project[]>(mockProjects);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [showModal, setShowModal] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
 
+  // Načítanie dát z databázy pri načítaní komponenty
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  // Načítanie projektov a klientov z API
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Paralelné načítanie projektov a klientov
+      const [projectsData, clientsData] = await Promise.all([
+        api.projects.getAll(),
+        api.clients.getAll()
+      ]);
+      
+      setProjects(projectsData);
+      setClients(clientsData);
+    } catch (err) {
+      setError('Nepodarilo sa načítať dáta z databázy');
+      console.error('Error loading data:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Filtrovanie projektov
   const filteredProjects = projects.filter(project => {
     const matchesSearch = 
       project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      project.client.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      project.technologies.some(tech => 
+      project.client_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      project.client_company?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      project.technologies?.some(tech => 
         tech.toLowerCase().includes(searchTerm.toLowerCase())
       );
     
@@ -127,27 +110,72 @@ export const ProjectsTab: React.FC = () => {
     setShowModal(true);
   };
 
-  const handleDeleteProject = (id: number) => {
+  const handleDeleteProject = async (id: number) => {
     if (window.confirm('Naozaj chcete zmazať tento projekt?')) {
-      setProjects(projects.filter(p => p.id !== id));
+      try {
+        await api.projects.delete(id);
+        setProjects(projects.filter(p => p.id !== id));
+      } catch (err) {
+        alert('Nepodarilo sa zmazať projekt');
+        console.error('Error deleting project:', err);
+      }
     }
   };
 
-  const handleSaveProject = (projectData: Partial<Project>) => {
-    if (editingProject) {
-      // Update existing project
-      setProjects(projects.map(p => 
-        p.id === editingProject.id 
-          ? { ...projectData, id: editingProject.id } as Project
-          : p
-      ));
-    } else {
-      // Add new project
-      const newProject: Project = {
-        ...projectData,
-        id: Math.max(...projects.map(p => p.id), 0) + 1
-      } as Project;
-      setProjects([...projects, newProject]);
+  const handleSaveProject = async (projectData: any) => {
+    try {
+      // Získanie client_id podľa mena klienta
+      const client = clients.find(c => 
+        (c.company || c.name) === projectData.client
+      );
+      
+      if (!client) {
+        alert('Klient nebol nájdený');
+        return;
+      }
+
+      // Príprava dát pre API
+      const apiData = {
+        name: projectData.name,
+        client_id: client.id,
+        status: projectData.status,
+        start_date: projectData.startDate,
+        end_date: projectData.endDate,
+        budget: projectData.budget || 0,
+        spent: projectData.spent || 0,
+        progress: projectData.progress || 0,
+        team_size: projectData.teamSize || 1,
+        description: projectData.description || '',
+        technologies: projectData.technologies || []
+      };
+
+      if (editingProject) {
+        // Update existujúceho projektu
+        const updated = await api.projects.update(editingProject.id, apiData);
+        setProjects(projects.map(p => 
+          p.id === editingProject.id ? {
+            ...updated,
+            client_name: client.name,
+            client_company: client.company
+          } : p
+        ));
+      } else {
+        // Vytvorenie nového projektu
+        const newProject = await api.projects.create(apiData);
+        // Pridáme info o klientovi pre zobrazenie
+        const projectWithClient = {
+          ...newProject,
+          client_name: client.name,
+          client_company: client.company
+        };
+        setProjects([projectWithClient, ...projects]);
+      }
+      
+      setShowModal(false);
+      setEditingProject(null);
+    } catch (err) {
+      alert('Nepodarilo sa uložiť projekt');
+      console.error('Error saving project:', err);
     }
   };
 
@@ -156,7 +184,7 @@ export const ProjectsTab: React.FC = () => {
     setEditingProject(null);
   };
 
-  // Pomocné funkcie pre ikony
+  // Pomocné funkcie
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'active': return <Clock className="h-4 w-4 text-blue-500" />;
@@ -172,9 +200,45 @@ export const ProjectsTab: React.FC = () => {
     total: projects.length,
     active: projects.filter(p => p.status === 'active').length,
     completed: projects.filter(p => p.status === 'completed').length,
-    totalBudget: projects.reduce((sum, p) => sum + p.budget, 0),
-    totalSpent: projects.reduce((sum, p) => sum + p.spent, 0)
+    totalBudget: projects.reduce((sum, p) => sum + (p.budget || 0), 0),
+    totalSpent: projects.reduce((sum, p) => sum + (p.spent || 0), 0)
   };
+
+  // Príprava dát pre modal - konverzia client_id na client name
+  const prepareProjectForEdit = (project: Project) => {
+    const client = clients.find(c => c.id === project.client_id);
+    return {
+      ...project,
+      client: client ? (client.company || client.name) : '',
+      startDate: project.start_date,
+      endDate: project.end_date,
+      teamSize: project.team_size
+    };
+  };
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-gray-500">Načítavam projekty...</div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg">
+        {error}
+        <button onClick={loadData} className="ml-4 text-red-600 underline">
+          Skúsiť znova
+        </button>
+      </div>
+    );
+  }
+
+  // Získanie názvov klientov pre dropdown v modáli
+  const availableClients = clients.map(c => c.company || c.name);
 
   return (
     <div className="space-y-6">
@@ -283,7 +347,7 @@ export const ProjectsTab: React.FC = () => {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredProjects.map((project) => {
-                const daysLeft = calculateDaysLeft(project.endDate);
+                const daysLeft = calculateDaysLeft(project.end_date);
                 const isOverdue = daysLeft < 0 && project.status === 'active';
                 const statusConfig = PROJECT_STATUSES[project.status];
                 
@@ -295,12 +359,12 @@ export const ProjectsTab: React.FC = () => {
                           {project.name}
                         </div>
                         <div className="text-xs text-gray-500 flex flex-wrap gap-1 mt-1">
-                          {project.technologies.slice(0, 3).map(tech => (
+                          {project.technologies?.slice(0, 3).map(tech => (
                             <span key={tech} className="bg-gray-100 px-2 py-0.5 rounded">
                               {tech}
                             </span>
                           ))}
-                          {project.technologies.length > 3 && (
+                          {project.technologies?.length > 3 && (
                             <span className="text-gray-400">
                               +{project.technologies.length - 3}
                             </span>
@@ -309,7 +373,9 @@ export const ProjectsTab: React.FC = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{project.client}</div>
+                      <div className="text-sm text-gray-900">
+                        {project.client_company || project.client_name || 'N/A'}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-2">
@@ -335,31 +401,33 @@ export const ProjectsTab: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-1">
                         <Users className="h-4 w-4 text-gray-400" />
-                        <span className="text-sm text-gray-900">{project.teamSize}</span>
+                        <span className="text-sm text-gray-900">{project.team_size}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
                         <div className="text-sm text-gray-900">
-                          {formatCurrency(project.spent)}
+                          {formatCurrency(project.spent || 0)}
                         </div>
                         <div className="text-xs text-gray-500">
-                          z {formatCurrency(project.budget)}
+                          z {formatCurrency(project.budget || 0)}
                         </div>
-                        <div className="mt-1">
-                          <div className="w-20 bg-gray-200 rounded-full h-1">
-                            <div 
-                              className={`h-1 rounded-full ${getBudgetStatusColor(project.spent, project.budget)}`}
-                              style={{ width: `${Math.min(100, (project.spent / project.budget) * 100)}%` }}
-                            />
+                        {project.budget > 0 && (
+                          <div className="mt-1">
+                            <div className="w-20 bg-gray-200 rounded-full h-1">
+                              <div 
+                                className={`h-1 rounded-full ${getBudgetStatusColor(project.spent || 0, project.budget)}`}
+                                style={{ width: `${Math.min(100, ((project.spent || 0) / project.budget) * 100)}%` }}
+                              />
+                            </div>
                           </div>
-                        </div>
+                        )}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
                         <div className="text-sm text-gray-900">
-                          {formatDate(project.endDate)}
+                          {formatDate(project.end_date)}
                         </div>
                         {project.status === 'active' && (
                           <div className={`text-xs ${isOverdue ? 'text-red-600 font-medium' : 'text-gray-500'}`}>
@@ -371,7 +439,7 @@ export const ProjectsTab: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       <div className="flex gap-2">
                         <button
-                          onClick={() => handleEditProject(project)}
+                          onClick={() => handleEditProject(prepareProjectForEdit(project) as any)}
                           className="text-blue-600 hover:text-blue-900 transition-colors"
                           title="Upraviť projekt"
                         >
@@ -406,7 +474,7 @@ export const ProjectsTab: React.FC = () => {
         onClose={handleCloseModal}
         onSave={handleSaveProject}
         project={editingProject}
-        availableClients={AVAILABLE_CLIENTS}
+        availableClients={availableClients}
         availableTechnologies={AVAILABLE_TECHNOLOGIES}
       />
     </div>
