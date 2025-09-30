@@ -21,7 +21,7 @@ interface ProjectFormModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (project: Partial<Project>) => void;
-  project?: Project | null;
+  project: Project | null;
   availableClients: string[];
   availableTechnologies: string[];
 }
